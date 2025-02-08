@@ -1,1 +1,1 @@
-# its a flexing application for progammers
+# server of my application
