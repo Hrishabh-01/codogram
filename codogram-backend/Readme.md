@@ -1,1 +1,1 @@
-# server of my application
+# backend of my application
