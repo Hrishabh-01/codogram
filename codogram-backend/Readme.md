@@ -1,1 +1,1 @@
-# server of my application
+# "Nice to meet you" backend of the server
