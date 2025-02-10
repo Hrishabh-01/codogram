@@ -1,1 +1,1 @@
-# "Nice to meet you" backend of the server
+# "Nice to mee you" backend of the server
