@@ -1,4 +1,6 @@
 import mongoose,{Schema} from "mongoose";
+import jwt from "jsonwebtoken" //jwt is bearer token , jiske pass token voh hi sahi h
+import bcrypt from "bcrypt"
 
 const userSchema = new Schema(
     {
@@ -53,6 +55,44 @@ const userSchema = new Schema(
         },
     },{timestamps:true}// Automatically adds createdAt and updatedAt timestamps
 )
+
+userSchema.pre("save",async function (next){
+    if(!this.isModified("password"))return next();// password change na hua h toh kyu hi ese encrypt kre
+
+    this.password=bcrypt.hash(this.password, 10)
+    next()
+})//it is a hook or middleware
+
+userSchema.methods.isPasswordCorrect = async function
+(password){
+    return await bcrypt.compare(password,this.password)
+}
+
+userSchema.methods.generateAccessToken =function(){
+    return jwt.sign
+    (
+    {
+        _id:this._id,
+        email:this.email,
+        username:this.username,
+        fullname:this.fullname
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+        expiresIn:process.env.ACCESS_TOKEN_EXPIRY
+    }
+    )
+}
+userSchema.methods.generateRefreshToken =function(){
+    return jwt.sign({
+        _id:this._id,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+        expiresIn:process.env.REFRESH_TOKEN_EXPIRY
+    }
+)
+}
 
 export const User = mongoose.model("User",userSchema)
 
