@@ -1,4 +1,9 @@
 //method 1 using promise
+//it is a higher order function that takes a request handler function as an argument 
+// and returns a new function that takes three arguments: 
+// req, res, and next. The new function calls the original function and catches any errors that it throws. 
+// If an error occurs, the new function calls next with the error as an argument. 
+// This allows us to handle errors in a single place, rather than having to add try/catch blocks to every route handler.
 const asyncHandler =(requestHandler)=>{
     return (req,res,next)=>{
         Promise.resolve(requestHandler(req,res,next)).catch((err)=>next(err))

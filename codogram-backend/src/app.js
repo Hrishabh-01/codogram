@@ -17,4 +17,15 @@ app.use(express.urlencoded({extended:true,
 app.use(express.static("public"))
 app.use(cookieParser())
 
+
+
+//routes import
+//we can only take man chaha name if export is default 
+import userRouter from "./routes/user.routes.js"
+
+//routers declaration
+app.use("/api/v1/users",userRouter)//it works as a middleware
+//http://localhost:8000/api/v1/users/register we have to write it for register user route 
+//if we want to login we have to write http://localhost:8000/api/v1/users/login
+
 export {app}
