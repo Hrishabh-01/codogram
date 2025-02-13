@@ -29,6 +29,9 @@ const userSchema = new Schema(
             type:String,//cloudinary url
             required:true,
         },
+        converImage:{
+            type:String,//cloudinary url
+        },
         bio:{
             type:String,
         },
