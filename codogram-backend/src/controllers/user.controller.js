@@ -189,7 +189,7 @@ return res
 const refreshAccessToken = asyncHandler(async(req,res)=>{
     const incompleteRefreshToken =req.cookies.refreshToken || req.body.refreshToken
 
-    if(incompleteRefreshToken){
+    if(!incompleteRefreshToken){
         throw new ApiError(401,"Unauthorized request")
     }
 try {
