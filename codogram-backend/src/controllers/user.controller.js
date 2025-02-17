@@ -259,17 +259,25 @@ const changeCurrentPassword =asyncHandler(async(req,res)=>{
 
 const getCurrentUser = asyncHandler(async(req,res)=>{
     return res.status(200)
-    .json(200,req.user,"current user fetched successfully")
+    .json (
+        new ApiResponse(
+            200,
+            req.user,
+            "current user fetched successfully"
+        )
+    )
+
 })
 
 const updateAccountDetails = asyncHandler(async(req,res)=>{
-    const {fullname,username,bio,skills}=req.body
+    const {fullname,email,username,bio,skills}=req.body
+    console.log("Request Body:", req.body)
 
     if(!fullname || !username){
         throw new ApiError(400,"Fullname and username are required")
     }
 
-    User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set:{
@@ -303,7 +311,7 @@ const updateUserAvatar=asyncHandler(async(req,res)=>{
         throw new ApiError(400,"Error while uploading on avatar")
     }
 
-    await User.findByIdAndUpdate(
+    const user =await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set:{
