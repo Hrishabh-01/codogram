@@ -17,29 +17,23 @@ const postSchema=new Schema(
             type:String,
             required:true,
         },
-        media: [{
-            type: String, // Array of media URLs (images/videos)
-            required: true
-        }],
-        duration:{
-            type:Number,
-            default:0
+        media: {
+            type:[String],
+            required:true,
+            default:[]
         },
-        codeSnippet: {
-            language: { type: String, trim: true }, // e.g., "JavaScript", "Python"
-            content: { type: String, trim: true }, // The actual code snippet
-        },
-        likes: [{
-            type: Schema.Types.ObjectId,
-            ref: "User" // Stores user IDs who liked the post
-        }],
-        comments: [{
-            user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-            text: { type: String, required: true },
-            created_at: { type: Date, default: Date.now }
-        }],
+        // duration:{
+        //     type:Number,
+        //     default:0
+        // },
+        // codeSnippet: {
+        //     language: { type: String, trim: true,default: null }, // e.g., "JavaScript", "Python"
+        //     content: { type: String, trim: true,default: null }, // The actual code snippet
+        //     default:null
+        // },
         tags: [{
             type:String,
+            trim: true,
         }], // Hashtags or mentions (e.g., ["#JavaScript", "#OpenSource"])
         isPublic: {
             type: Boolean,

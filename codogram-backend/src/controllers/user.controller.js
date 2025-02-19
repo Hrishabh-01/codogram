@@ -375,6 +375,8 @@ const getUserProfile=asyncHandler(async(req,res)=>{
     if(!username?.trim()){
         throw new ApiError(400,"Username is missing")
     }
+    console.log("Searching for user:", username);
+
 
     const following = await User.aggregate([
         {
@@ -399,12 +401,23 @@ const getUserProfile=asyncHandler(async(req,res)=>{
             }
         },
         {
+            $lookup:{
+                from:"posts",
+                localField:"_id",
+                foreignField:"user",
+                as:"posts"
+            }
+        },
+        {
             $addFields:{
                 followersCount:{
                     $size:"$followers"//to get the length of the array of followers
                 },
                 followingCount:{
                     $size:"$followingTo"//to get the length of the array of following
+                },
+                totalPosts:{
+                    $size:"$posts"//to get the length of the array of posts
                 },
                 isFollowed:{
                     $cond:{
@@ -425,7 +438,17 @@ const getUserProfile=asyncHandler(async(req,res)=>{
                 bio:1,
                 skills:1,
                 avatar:1,
-                coverImage:1
+                coverImage:1,
+                totalPosts:1,
+                posts: {
+                    _id: 1,
+                    title: 1,
+                    description: 1,
+                    media: 1,
+                    tags: 1,
+                    isPublic: 1,
+                    createdAt: 1
+                }
 
             }
         }
