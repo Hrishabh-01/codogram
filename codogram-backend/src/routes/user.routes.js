@@ -9,7 +9,9 @@ import {
     updateAccountDetails, 
     updateUserAvatar, 
     updateUserCoverImage,
-    getUserProfile  
+    getUserProfile ,
+    followUser,
+    unfollowUser 
 } from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -64,6 +66,14 @@ router.route("/update-coverImage").post(
 router.route("/get-user-profile/:username").get(
     verifyJWT,
     getUserProfile
+)
+router.route("/follow/:id").post(
+    verifyJWT,
+    followUser
+)
+router.route("/unfollow/:id").post(
+    verifyJWT,
+    unfollowUser
 )
 
 

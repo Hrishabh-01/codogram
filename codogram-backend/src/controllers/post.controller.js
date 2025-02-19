@@ -5,6 +5,7 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 // import jwt from "jsonwebtoken"; 
 import { Post } from "../models/post.model.js";
+import { Follow } from "../models/follower.model.js";
 
  const createPost = asyncHandler(async(req,res)=>{
     //get post details from frontend
@@ -47,7 +48,7 @@ import { Post } from "../models/post.model.js";
         user:user._id,
         title,
         description,
-        media:[media.secure_url],
+        media:mediaUrls,
         // codeSnippet,
         tags,
         isPublic,
@@ -62,7 +63,7 @@ import { Post } from "../models/post.model.js";
     return res.status(201).json(
         new ApiResponse(
             200,
-            createPost,
+            createdPost,
             "Post created successfully",
         )
     )
@@ -99,4 +100,79 @@ const deletePost = asyncHandler(async(req,res)=>{
 
 })
 
- export {createPost,deletePost}
+const getFeed = asyncHandler(async(req,res)=>{
+    //get user id from req
+    //get user following list
+    //get posts from users in following list
+    //return res
+
+    const user=req.user;
+    const { page = 1, limit = 10 } = req.query; // Pagination params
+    const skip = (page - 1) * limit;
+
+    const followingList = await Follow.find({ follower: user._id }).select("following");
+    const followingUserIds = followingList.map(follow => follow.following);
+
+    console.log("Following User IDs: ", followingUserIds);
+
+    if (followingUserIds.length === 0) {
+        throw new ApiError(404, "You are not following anyone");
+    }
+
+    const feedPosts =await Post.aggregate(
+        [
+            {
+                $match:{
+                    $or:[
+                        {user:{
+                            $in:followingUserIds 
+                        }},
+                        {isPublic:true}
+                    ]
+                }
+            },
+            {
+                $sort:{
+                    createdAt:-1
+                }
+            },
+            {
+                $skip: skip
+            },
+            {
+                $limit: Number(limit)
+            },
+            {
+                $lookup:{
+                    from:"users",
+                    localField:"user",
+                    foreignField:"_id",
+                    as:"user"
+                }
+            },
+            {
+                $unwind:"$user"
+            },
+            {
+                $project:{
+                    _id: 1,
+                    title: 1,
+                    description: 1,
+                    media: 1,
+                    tags: 1,
+                    isPublic: 1,
+                    createdAt: 1,
+                    "user._id": 1,
+                "user.username": 1,
+                "user.avatar": 1
+                }
+            }
+
+        ]
+    );
+    return res.status(200).json(
+        new ApiResponse(200, feedPosts, "Feed fetched successfully")
+    );
+
+})
+ export {createPost,deletePost,getFeed}

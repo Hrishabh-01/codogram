@@ -1,6 +1,7 @@
 import {asyncHandler} from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js";
 import {User} from "../models/user.model.js"
+import {Follow} from "../models/follower.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
@@ -396,7 +397,7 @@ const getUserProfile=asyncHandler(async(req,res)=>{
             $lookup:{
                 from:"follows",
                 localField:"_id",
-                foreignField:"followers",
+                foreignField:"follower",
                 as:"followingTo"
             }
         },
@@ -468,6 +469,64 @@ const getUserProfile=asyncHandler(async(req,res)=>{
     )
 })
 
+const followUser = asyncHandler(async (req, res) => {
+    const user = req.user._id; // Logged-in user
+    const  userIdToFollow = req.params.id; // User to follow
+
+    if (!userIdToFollow) {
+        throw new ApiError(400, "User id is required");
+    }
+    if (userIdToFollow === user.toString()) {
+        throw new ApiError(400, "You cannot follow yourself!");
+    }
+
+
+    // Check if already following
+    const existingFollow = await Follow.findOne({ follower: user, following: userIdToFollow });
+    if (existingFollow) {
+        throw new ApiError(400, "You are already following this user!");
+    }
+
+    // Create new follow entry
+    await Follow.create({ follower: user, following: userIdToFollow });
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, {}, "Followed successfully"
+
+        ));
+});
+
+const unfollowUser = asyncHandler(async (req, res) => {
+    const user = req.user._id;
+    const userIdToUnfollow = req.params.id;
+
+    if (!userIdToUnfollow) {
+        throw new ApiError(400, "User ID to unfollow is required");
+    }
+
+    if (user.toString() === userIdToUnfollow) {
+        throw new ApiError(400, "You cannot unfollow yourself");
+    }
+
+    const userToUnfollow = await User.findById(userIdToUnfollow);
+    if (!userToUnfollow) {
+        throw new ApiError(404, "User not found");
+    }
+
+    // Check if the follow relationship exists
+    const existingFollow = await Follow.findOne({ follower: user, following: userIdToUnfollow });
+    if (!existingFollow) {
+        throw new ApiError(400, "You are not following this user");
+    }
+
+    // Remove the follow relationship from the Follow model
+    await Follow.findOneAndDelete({ follower: user, following: userIdToUnfollow });
+
+    return res.status(200).json(new ApiResponse(200, {}, "Unfollowed successfully"));
+});
+
 
 export {
     registerUser,
@@ -479,5 +538,7 @@ export {
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserProfile
+    getUserProfile,
+    followUser,
+    unfollowUser
 }

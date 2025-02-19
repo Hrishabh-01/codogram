@@ -43,10 +43,6 @@ const userSchema = new Schema(
             type:Number,
             default:0
         },
-        // friend_list:[{
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: "User" // Reference to other users
-        // }],
         password:{
             type:String,
             required:[true,"Password is required"],

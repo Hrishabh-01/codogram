@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import {upload} from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { createPost,deletePost } from "../controllers/post.controller.js";
+import { createPost,deletePost,getFeed } from "../controllers/post.controller.js";
 
 const router=Router();
 
@@ -20,6 +20,10 @@ router.route("/create-post").post(
 router.route("/delete-post/:postId").delete(
     verifyJWT,
     deletePost
+)
+router.route("/feed").get(
+    verifyJWT,
+    getFeed
 )
 
 export default router;

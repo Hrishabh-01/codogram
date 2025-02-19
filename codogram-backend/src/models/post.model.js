@@ -22,15 +22,7 @@ const postSchema=new Schema(
             required:true,
             default:[]
         },
-        // duration:{
-        //     type:Number,
-        //     default:0
-        // },
-        // codeSnippet: {
-        //     language: { type: String, trim: true,default: null }, // e.g., "JavaScript", "Python"
-        //     content: { type: String, trim: true,default: null }, // The actual code snippet
-        //     default:null
-        // },
+        
         tags: [{
             type:String,
             trim: true,
