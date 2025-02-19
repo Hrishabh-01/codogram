@@ -369,6 +369,83 @@ const updateUserCoverImage=asyncHandler(async(req,res)=>{
 
 })
 
+const getUserProfile=asyncHandler(async(req,res)=>{
+    const {username} =req.params
+
+    if(!username?.trim()){
+        throw new ApiError(400,"Username is missing")
+    }
+
+    const following = await User.aggregate([
+        {
+            $match:{
+                username:username?.toLowerCase()
+            }
+        },
+        {
+            $lookup:{
+                from:"follows",
+                localField:"_id",
+                foreignField:"following",
+                as:"followers"
+            }
+        },
+        {
+            $lookup:{
+                from:"follows",
+                localField:"_id",
+                foreignField:"followers",
+                as:"followingTo"
+            }
+        },
+        {
+            $addFields:{
+                followersCount:{
+                    $size:"$followers"//to get the length of the array of followers
+                },
+                followingCount:{
+                    $size:"$followingTo"//to get the length of the array of following
+                },
+                isFollowed:{
+                    $cond:{
+                        if:{$in:[req.user?._id,"$followers.follower"]},//to check if the user is following the user
+                        then:true,
+                        else:false
+                    }
+                }
+            }
+        },
+        {
+            $project:{//to project the fields that we want to send in response
+                fullname:1,
+                username:1,
+                followersCount:1,
+                followingCount:1,
+                isFollowed:1,
+                bio:1,
+                skills:1,
+                avatar:1,
+                coverImage:1
+
+            }
+        }
+    ])
+    console.log("following : ",following);
+    if(!following?.length){
+        throw new ApiError(404,"User profile not found")
+    }
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            following[0],
+            "User profile fetched successfully"
+        )
+    )
+})
+
+
 export {
     registerUser,
     loginUser,
@@ -378,5 +455,6 @@ export {
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserProfile
 }
