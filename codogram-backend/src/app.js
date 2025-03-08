@@ -27,6 +27,7 @@ import likeRouter from "./routes/like.routes.js"
 import commentRouter from "./routes/comment.routes.js"
 import chatRouter from "./routes/chat.routes.js";
 import storyRouter from "./routes/story.routes.js";
+import snapRouter from "./routes/snap.routes.js";
 //routers declaration
 app.use("/api/v1/users",userRouter)//it works as a middleware
 //http://localhost:8000/api/v1/users/register we have to write it for register user route 
@@ -37,5 +38,6 @@ app.use("/api/v1/likes",likeRouter)
 app.use("/api/v1/comments",commentRouter)
 app.use("/api/v1/chats", chatRouter);
 app.use("/api/v1/stories", storyRouter);
+app.use("/api/v1/snap", snapRouter);
 
 export {app}

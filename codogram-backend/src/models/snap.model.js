@@ -29,7 +29,11 @@ const snapSchema = new Schema(
         expiresAt: {
             type: Date,
             default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
-            index: true,
+            // index: true,
+        },
+        chatId: {
+            type: Schema.Types.ObjectId,
+            ref: "Chat",
         },
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt

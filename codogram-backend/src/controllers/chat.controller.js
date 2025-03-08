@@ -5,12 +5,15 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Message } from "../models/message.model.js";
 import { Chat } from "../models/chat.model.js";
+import { Snap } from "../models/snap.model.js";
+import { Streak } from "../models/streak.model.js"; // Import Streak Model
 
 let io; // Socket instance
 
 export const setSocketInstance = (socketInstance) => {
     io = socketInstance;
 };
+
 // Create or fetch an individual chat
 const accessChat = asyncHandler(async (req, res) => {
     const { userId } = req.body;
@@ -24,7 +27,8 @@ const accessChat = asyncHandler(async (req, res) => {
         isGroup: false,
         participants: { $all: [loggedInUser, userId] },
     }).populate("participants", "-password")
-      .populate("lastMessage");
+      .populate("lastMessage")
+      .populate("snaps");
 
     if (!chat) {
         chat = await Chat.create({
@@ -34,24 +38,72 @@ const accessChat = asyncHandler(async (req, res) => {
 
         await chat.populate("participants", "-password");
     }
-    console.log(`chat id : `,chat);
+
+    // Fetch Streak Count using Aggregation Pipeline
+    const streakData = await Streak.aggregate([
+        { $match: { users: { $all: [loggedInUser, userId] } } },
+        { $project: { _id: 0, count: 1 } }
+    ]);
+    const streakCount = streakData.length > 0 ? streakData[0].count : 0;
     
-    return res.status(200).json(new ApiResponse(200, chat, "Chat accessed successfully"));
+    return res.status(200).json(new ApiResponse(200, { chat, streakCount }, "Chat accessed successfully"));
+});
+
+// Fetch all chats for the logged-in user
+const getChats = asyncHandler(async (req, res) => {
+    const loggedInUser = req.user._id;
+
+    // Fetch all chats where the logged-in user is a participant
+    let chats = await Chat.find({ participants: loggedInUser })
+        .populate("participants", "-password")
+        .populate("lastMessage")
+        .populate("snaps")
+        .sort({ updatedAt: -1 });
+
+    // Fetch Streak Counts for Each Chat
+    const streakData = await Streak.find({ users: loggedInUser });
+
+    // Map streak counts to corresponding chats
+    const streakMap = {};
+    streakData.forEach(({ users, count }) => {
+        const otherUser = users.find((user) => user.toString() !== loggedInUser.toString());
+        if (otherUser) {
+            streakMap[otherUser.toString()] = count;
+        }
+    });
+    console.log("Chats:", chats);
+    console.log("Streak Data:", streakData);
+
+
+    // Attach streak count to each chat
+    chats = chats.map(chat => {
+        if (!chat.isGroup) {
+            const otherUserId = chat.participants.find(p => p._id.toString() !== loggedInUser.toString())?._id.toString();
+            return {
+                ...chat.toObject(),
+                streakCount: streakMap[otherUserId] || 0
+            };
+        }
+        return chat.toObject();
+    });
+    
+
+    return res.status(200).json(new ApiResponse(200, chats, "Chats retrieved successfully"));
 });
 
 // Create a group chat with image upload
 const createGroupChat = asyncHandler(async (req, res) => {
-    console.log("req.body:", req.body);
-    console.log("req.file:", req.file);
-    const { groupName,participantIds } = req.body;
+    const { groupName, participantIds } = req.body;
     const loggedInUser = req.user._id;
 
-    if(!groupName){
+    if (!groupName || !groupName.trim()) {
         throw new ApiError(400, "Group name is required");
     }
+
     if (!Array.isArray(participantIds)) {
         participantIds = participantIds ? [participantIds] : [];
     }
+    
 
     // Check if a group with the same name and participants already exists
     const existingGroup = await Chat.findOne({
@@ -63,14 +115,15 @@ const createGroupChat = asyncHandler(async (req, res) => {
     if (existingGroup) {
         throw new ApiError(400, "A group with the same participants already exists");
     }
+
     let uploadedImage = null;
-if (req.file) {
-    const uploadResult = await uploadOnCloudinary(req.file.path);
-    if (!uploadResult) {
-        throw new ApiError(500, "Failed to upload image to Cloudinary");
+    if (req.file) {
+        const uploadResult = await uploadOnCloudinary(req.file.path);
+        if (!uploadResult) {
+            throw new ApiError(500, "Failed to upload image to Cloudinary");
+        }
+        uploadedImage = uploadResult.secure_url;
     }
-    uploadedImage = uploadResult.secure_url;
-}
 
     const groupChat = await Chat.create({
         isGroup: true,
@@ -128,7 +181,9 @@ const getMessages = asyncHandler(async (req, res) => {
         .populate("sender", "username avatar")
         .populate("chat");
 
-    return res.status(200).json(new ApiResponse(200, messages, "Messages retrieved successfully"));
+    const snaps = await Snap.find({ chatId, receiver: userId, isViewed: false });
+
+    return res.status(200).json(new ApiResponse(200, { messages, snaps }, "Messages and snaps retrieved successfully"));
 });
 
 // Soft delete a message
@@ -150,6 +205,7 @@ const deleteMessage = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, {}, "Message deleted successfully"));
 });
 
+// Mark messages as read
 const markMessagesAsRead = asyncHandler(async (req, res) => {
     const { chatId } = req.params;
     const userId = req.user._id;
@@ -167,5 +223,4 @@ const markMessagesAsRead = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, {}, "Messages marked as read"));
 });
 
-
-export { accessChat, createGroupChat, sendMessage, getMessages, deleteMessage,markMessagesAsRead };
+export { accessChat, getChats, createGroupChat, sendMessage, getMessages, deleteMessage, markMessagesAsRead };

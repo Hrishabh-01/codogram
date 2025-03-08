@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
     accessChat, 
+    getChats,
     createGroupChat, 
     sendMessage, 
     getMessages, 
@@ -15,6 +16,9 @@ const router =Router();
 
 // ✅ Route to create/fetch an individual chat
 router.post("/access", verifyJWT, accessChat);
+
+// ✅ Route to fetch all chats
+router.get("/fetch", verifyJWT, getChats);
 
 // ✅ Route to create a group chat
 router.post("/group",
