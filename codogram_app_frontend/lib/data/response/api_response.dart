@@ -1,5 +1,4 @@
-
-import '../network/NetworkApiService.dart';
+import 'package:codogram_app_frontend/data/response/status.dart';
 
 class ApiResponse<T>{
 
