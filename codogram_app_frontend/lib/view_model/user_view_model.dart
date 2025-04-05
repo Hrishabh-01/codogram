@@ -32,5 +32,4 @@ class UserViewModel with ChangeNotifier{
     notifyListeners();
     return true;
   }
-
 }

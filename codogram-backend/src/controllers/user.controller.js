@@ -258,17 +258,101 @@ const changeCurrentPassword =asyncHandler(async(req,res)=>{
 
 })
 
-const getCurrentUser = asyncHandler(async(req,res)=>{
-    return res.status(200)
-    .json (
-        new ApiResponse(
-            200,
-            req.user,
-            "current user fetched successfully"
-        )
-    )
+const getCurrentUser = asyncHandler(async (req, res) => {
+    const currentUserId = req.user._id;
+  
+    const userAggregation = await User.aggregate([
+      {
+        $match: { _id: currentUserId }
+      },
+      // Followers
+      {
+        $lookup: {
+          from: "follows",
+          let: { userId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$following", "$$userId"] } } }
+          ],
+          as: "followers"
+        }
+      },
+      // Following
+      {
+        $lookup: {
+          from: "follows",
+          let: { userId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$follower", "$$userId"] } } }
+          ],
+          as: "following"
+        }
+      },
+      // All Posts uploaded by user
+      {
+        $lookup: {
+          from: "posts",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$user", "$$userId"] }
 
-})
+              }
+            },
+            {
+              $sort: { createdAt: -1 }
+            },
+            {
+              $project: {
+                _id: 1,
+                content: 1,
+                media: 1,
+                createdAt: 1,
+                reactions: 1,
+                commentsCount: { $size: { $ifNull: ["$comments", []] } }
+
+              }
+            }
+          ],
+          as: "posts"
+        }
+      },
+      {
+        $addFields: {
+          followersCount: { $size: "$followers" },
+          followingCount: { $size: "$following" },
+          postsCount: { $size: "$posts" }
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          email: 1,
+          username: 1,
+          bio: 1,
+          avatar: 1,
+          coverImage: 1,
+          followersCount: 1,
+          followingCount: 1,
+          postsCount: 1,
+          posts: 1,
+          createdAt: 1,
+          snapScore: 1,      // ✅ make sure this is included
+          skills: 1,
+          
+        }
+      }
+    ]);
+  
+    if (!userAggregation || userAggregation.length === 0) {
+      throw new ApiError(404, "User not found");
+    }
+  
+    return res.status(200).json(
+      new ApiResponse(200, userAggregation[0], "User fetched successfully")
+    );
+  });
+  
 
 const updateAccountDetails = asyncHandler(async(req,res)=>{
     const {fullname,email,username,bio,skills}=req.body

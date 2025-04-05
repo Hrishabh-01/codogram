@@ -11,6 +11,7 @@ class AppUrl {
   static var registerApiEndPoint = baseUrl + '/users/register';
 
   static var feedEndPoint = baseUrl + '/posts/feed';
+  static var myprofileEndPoint = baseUrl + '/users/get-current-user';
 
   static var moviesListEndPoint = moviesBaseUrl + 'movies_list';
 }
